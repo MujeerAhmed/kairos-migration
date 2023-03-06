@@ -3,25 +3,19 @@ import time
 from datetime import datetime
 import requests
 
-# Connection string for SQL Server
-tag_names = ['1HBK40CT084', '1HBK40CT081', '1HBK40CT083'] # Example list of tag names
+tag_names = ['1LBA99EA011']
 conn_string = 'Driver={SQL Server};Server=MUJEERPC\MSSQLSERVER01;Database=panndetekt;Trusted_Connection=yes;'
 
-# Connect to the database
 conn = pyodbc.connect(conn_string)
 
-# Create a cursor
 cursor = conn.cursor()
 
-# Execute a SQL query for each tag name in the list
 for tag_name in tag_names:
-    query = f"SELECT * FROM [panndetekt].[dbo].[DB1] WHERE TagName = '{tag_name}'"
+    query = f"SELECT * FROM [panndetekt].[dbo].[DB2] WHERE TagName = '{tag_name}'"
     cursor.execute(query)
 
-    # Fetch the results
     results = cursor.fetchall()
 
-    # Convert timestamp to epoch format
     epoch_results = []
     for row in results:
         dt = datetime.strptime(row[0], '%Y-%m-%d %H:%M:%S.%f0')  # Convert string to datetime object
@@ -35,7 +29,6 @@ for tag_name in tag_names:
     url = "http://13.68.199.3/kairosapi/api/v1/datapoints"
     col = f"UMEA_{tag_name}"
     
-    # Define a function to send post request with a time gap of 3 seconds
     def post_with_delay(url,store_vals,col):
         body = [{
                 "name": str(col),
@@ -47,16 +40,16 @@ for tag_name in tag_names:
         print(res.content)
         print(res.status_code)
         if res.status_code == 204:
-            print ('Data Posted Successfully!')
+            print ('Data Posted Successfully! -', tag_name)
         else:
             print("Post data fail")
     
-    # Send post request with a time gap of 3 seconds
     while post_list:
         post_chunk = post_list[:20000]
         post_list = post_list[20000:]
         post_with_delay(url, post_chunk, col)
         time.sleep(3)
+        results.clear()
         
 cursor.close()
 conn.close()
